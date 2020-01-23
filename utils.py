@@ -1,4 +1,4 @@
-from jax import grad, jit, random
+from jax import grad, jit, random, vmap
 import jax.numpy as np
 from jax.flatten_util import ravel_pytree
 from tqdm import tqdm
@@ -49,17 +49,14 @@ def make_model(model, input_shape, num_particles):
         np.array(ravel_pytree(params_[i])[0]) for i in range(num_particles)
     ])
 
-    #TODO: use vmap instead of loop!
-    @jit
-    def predict_(thetas, x, rng_key=random.PRNGKey(0)):
-        outs = []
-        for i in range(num_particles):
-            theta_i = unflattener(thetas[i])
-            out = predict(theta_i, x, rng=rng_key)
-            outs.append(out)
-        return np.array(outs)
+    def predict_one(theta,x):
+        rng_key=random.PRNGKey(0)
+        theta_flat = unflattener(theta)
+        return predict(theta_flat, x, rng=rng_key)
 
-    return thetas, predict_
+    predict_batch = jit(vmap(predict_one,(0,None),0))
+
+    return thetas, predict_batch
 
 
 def tqdm_(loader):
