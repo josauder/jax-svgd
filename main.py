@@ -1,26 +1,34 @@
 from jax import grad, jit
 import numpy as np_normal
 import jax.numpy as np
-from utils import kernel_matrix_and_grad, cross_entropy, get_phi, SGD, sigmoid
+from utils import cross_entropy, SGD, sigmoid
 from mnist import get_mnist_dataset, LeNet5
 from utils import tqdm_
+from kernels import construct_phi_for_kernel
 
-num_particles = 2
-batch_size = 16
+num_particles = 10
+batch_size = 64
 
 train_loader, test_loader = get_mnist_dataset(batch_size)
 theta, forward = LeNet5(
-    batch_size = batch_size,
-    num_particles = num_particles,
+    batch_size=batch_size,
+    num_particles=num_particles,
 )
+
 
 @jit
 def loss(theta, x, y):
     yhat = forward(theta, x)
     return cross_entropy(y, yhat)
 
+
 optimizer = SGD(0.001)
 grad_loss = jit(grad(loss))
+
+kernel = 'rbf_random'
+kernel_params = {'n_rand_feat': 10}
+
+get_phi = construct_phi_for_kernel(kernel, kernel_params)
 
 for epoch in range(100):
 

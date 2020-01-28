@@ -7,14 +7,6 @@ from tqdm import tqdm
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
-#TODO: tune h!
-@jit
-def kernel_matrix_and_grad(theta, h=0.1):
-    n_particles = theta.shape[0]
-    pairwise_dists = -((theta[:,np.newaxis,:] - theta))
-    K = np.exp(-(pairwise_dists**2).sum(-1) / h**2)
-    grad_K = pairwise_dists *  K.reshape((n_particles, n_particles, 1))
-    return K, grad_K
 
 #TODO remove hardcoded 10
 @jit
@@ -26,12 +18,6 @@ def cross_entropy(y, yhat):
     y = to_one_hot(y)
     y = y.reshape(1, y.shape[0], y.shape[1])
     return -np.mean(np.sum(y * yhat, axis=2))
-
-@jit
-def get_phi(theta, g):
-    K, grad_K = kernel_matrix_and_grad(theta)
-    phi = np.mean(np.matmul(K, g) + grad_K, axis=0)
-    return phi
 
 
 def make_model(model, input_shape, num_particles):
