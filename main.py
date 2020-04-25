@@ -6,30 +6,36 @@ from mnist import get_mnist_dataset, LeNet5
 from utils import tqdm_
 from kernels import construct_phi_for_kernel
 
-num_particles = 10
+# load the dataset
+train_loader, test_loader = get_mnist_dataset(batch_size)
+
+# set a batch size for large datasets
 batch_size = 64
 
-train_loader, test_loader = get_mnist_dataset(batch_size)
+# define SVGD properties
+
+# - kernel
+kernel = 'rbf_random' # alt: 'rbf_analytic', 'rbf', 'rbf_random', 'rbf_matrix', 'hess_matrix' as in kernels.py
+kernel_params = {'n_rand_feat': 10}
+get_phi = construct_phi_for_kernel(kernel, kernel_params)
+
+# - model
+num_particles = 10
 theta, forward = LeNet5(
     batch_size=batch_size,
     num_particles=num_particles,
 )
-
 
 @jit
 def loss(theta, x, y):
     yhat = forward(theta, x)
     return cross_entropy(y, yhat)
 
-
 optimizer = SGD(0.001)
 grad_loss = jit(grad(loss))
 
-kernel = 'rbf_random'
-kernel_params = {'n_rand_feat': 10}
 
-get_phi = construct_phi_for_kernel(kernel, kernel_params)
-
+# SVGD training
 for epoch in range(100):
 
     for i, (x, y) in tqdm_(train_loader):
